@@ -1,0 +1,12 @@
+flutter_native_splash:
+  color: "#4A90E2" # Primary Blue
+  # image: assets/images/splash_logo.png # Add your logo here
+  branding: assets/images/branding.png # Optional branding image
+  color_dark: "#121212"
+  # image_dark: assets/images/splash_logo_dark.png
+
+  android_12:
+    # image: assets/images/splash_logo_android12.png
+    color: "#4A90E2"
+  
+  web: false

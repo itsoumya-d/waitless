@@ -1,0 +1,35 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user accesses their own document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User Data Rules
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      // Subcollections
+      match /stats/{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      match /favorites/{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+    
+    // Venues (Public Read)
+    match /venues/{venueId} {
+      allow read: if true;
+      allow write: if false; // Admin only via backend
+    }
+  }
+}
