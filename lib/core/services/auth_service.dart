@@ -78,7 +78,7 @@ class AuthService {
 
     try {
       if (_analytics != null) {
-        await _analytics!.logLogin(loginMethod: 'password');
+        await _analytics.logLogin(loginMethod: 'password');
       }
     } catch (_) {}
 
@@ -97,7 +97,7 @@ class AuthService {
     final credential = await _auth.signInAnonymously();
     try {
       if (_analytics != null) {
-        await _analytics!.logLogin(loginMethod: 'anonymous');
+        await _analytics.logLogin(loginMethod: 'anonymous');
       }
     } catch (_) {}
     return credential;
