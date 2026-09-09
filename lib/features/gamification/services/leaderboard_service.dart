@@ -34,7 +34,7 @@ class LeaderboardService {
     }
 
     try {
-      final snapshot = await _firestore!
+      final snapshot = await _firestore
           .collection('users')
           .orderBy('contributionPoints', descending: true)
           .limit(50)

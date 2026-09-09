@@ -5,7 +5,6 @@ import '../../models/venue.dart';
 import '../../models/crowd_report.dart';
 import 'venue_repository.dart';
 import 'firestore_venue_repository.dart';
-import 'firebase_service.dart';
 import 'auth_service.dart';
 
 /// Configuration for which data source to use

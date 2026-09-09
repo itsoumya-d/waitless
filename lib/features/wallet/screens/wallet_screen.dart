@@ -6,7 +6,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/services/user_stats_service.dart';
-import '../../../models/user_data.dart';
 
 
 
