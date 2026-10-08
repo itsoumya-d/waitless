@@ -2,63 +2,36 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waitless/core/services/firestore_venue_repository.dart';
 
-class _Document extends Fake
-    implements QueryDocumentSnapshot<Map<String, dynamic>> {
-  @override
-  final String id;
-  final Map<String, dynamic> fields;
-  _Document(this.id, this.fields);
-  @override
-  Map<String, dynamic> data() => fields;
-}
+class _Firestore extends Fake implements FirebaseFirestore {}
 
-class _Snapshot extends Fake implements QuerySnapshot<Map<String, dynamic>> {
-  @override
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> docs;
-  _Snapshot(this.docs);
-}
-
-class _Collection extends Fake
-    implements CollectionReference<Map<String, dynamic>> {
-  final QuerySnapshot<Map<String, dynamic>> snapshot;
+class _Repository extends FirestoreVenueRepository {
+  final List<({String id, Map<String, dynamic> data})> records;
   int reads = 0;
-  _Collection(this.snapshot);
-  @override
-  Future<QuerySnapshot<Map<String, dynamic>>> get([GetOptions? options]) async {
-    reads++;
-    return snapshot;
-  }
-}
+  _Repository(this.records) : super(_Firestore());
 
-class _Firestore extends Fake implements FirebaseFirestore {
-  final _Collection venues;
-  _Firestore(this.venues);
   @override
-  CollectionReference<Map<String, dynamic>> collection(String path) {
-    expect(path, 'venues');
-    return venues;
+  Future<List<({String id, Map<String, dynamic> data})>>
+  loadVenueRecords() async {
+    reads++;
+    return records;
   }
 }
 
 void main() {
-  group('Firestore nearby discovery with in-memory snapshots', () {
-    late _Collection collection;
-    late FirestoreVenueRepository repository;
+  group('Firestore nearby discovery with in-memory records', () {
+    late _Repository repository;
     setUp(() {
-      collection = _Collection(
-        _Snapshot([
-          _Document('far', {'latitude': 0, 'longitude': 0.04}),
-          _Document('missing', {}),
-          _Document('partial', {'latitude': 0}),
-          _Document('malformed', {'latitude': '0', 'longitude': 0}),
-          _Document('invalid', {'latitude': 91, 'longitude': 0}),
-          _Document('nonfinite', {'latitude': double.nan, 'longitude': 0}),
-          _Document('outside', {'latitude': 0, 'longitude': 1}),
-          _Document('zero', {'latitude': 0, 'longitude': 0}),
-          _Document('near', {'latitude': 0, 'longitude': 0.01}),
-        ]),
-      );
-      repository = FirestoreVenueRepository(_Firestore(collection));
+      repository = _Repository([
+        (id: 'far', data: {'latitude': 0, 'longitude': 0.04}),
+        (id: 'missing', data: {}),
+        (id: 'partial', data: {'latitude': 0}),
+        (id: 'malformed', data: {'latitude': '0', 'longitude': 0}),
+        (id: 'invalid', data: {'latitude': 91, 'longitude': 0}),
+        (id: 'nonfinite', data: {'latitude': double.nan, 'longitude': 0}),
+        (id: 'outside', data: {'latitude': 0, 'longitude': 1}),
+        (id: 'zero', data: {'latitude': 0, 'longitude': 0}),
+        (id: 'near', data: {'latitude': 0, 'longitude': 0.01}),
+      ]);
     });
 
     test(
@@ -70,7 +43,7 @@ void main() {
         );
         expect(venues.map((v) => v.id), ['zero', 'near', 'far']);
         expect(venues[1].distanceKm, closeTo(1.1119492664, 0.000001));
-        expect(collection.reads, 1);
+        expect(repository.reads, 1);
       },
     );
 
@@ -91,7 +64,7 @@ void main() {
 
     test('invalid radius performs no database read', () async {
       expect(await repository.getNearbyVenues(radiusKm: double.nan), isEmpty);
-      expect(collection.reads, 0);
+      expect(repository.reads, 0);
     });
   });
 }

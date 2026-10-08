@@ -34,6 +34,16 @@ class FirestoreVenueRepository {
     }
   }
   
+  /// Read records separately so discovery can be tested without a live backend.
+  @protected
+  Future<List<({String id, Map<String, dynamic> data})>> loadVenueRecords() async {
+    final snapshot = await _venuesCollection.get();
+    return snapshot.docs.map((doc) => (
+      id: doc.id,
+      data: doc.data() as Map<String, dynamic>,
+    )).toList();
+  }
+
   /// Get nearby venues, or browse the catalog when location is unknown.
   Future<List<Venue>> getNearbyVenues({
     double? latitude,
@@ -44,10 +54,10 @@ class FirestoreVenueRepository {
     try {
       // Firestore has no native radius query. Filter client-side for now;
       // geohashing is still needed to avoid fetching the full collection.
-      final snapshot = await _venuesCollection.get();
+      final records = await loadVenueRecords();
       final venues = <Venue>[];
-      for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+      for (final record in records) {
+        final data = record.data;
         final lat = data['latitude'];
         final lng = data['longitude'];
         // Do not turn missing coordinates into a real venue at (0, 0).
@@ -55,7 +65,7 @@ class FirestoreVenueRepository {
             !hasValidCoordinates(lat.toDouble(), lng.toDouble())) {
           continue;
         }
-        venues.add(_venueFromFirestore(doc.id, data));
+        venues.add(_venueFromFirestore(record.id, data));
       }
       return selectNearbyVenues(
         venues,
