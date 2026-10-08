@@ -73,27 +73,36 @@ class _AuthService extends Fake implements AuthService {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('discovery does not request permission or read GPS when permission is denied', () async {
-    const channel = MethodChannel('flutter.baseflow.com/geolocator');
-    final calls = <String>[];
-    final messenger =
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-    messenger.setMockMethodCallHandler(channel, (call) async {
-      calls.add(call.method);
-      if (call.method == 'isLocationServiceEnabled') return true;
-      if (call.method == 'checkPermission') return 0; // denied
-      throw StateError('Unexpected native call: ${call.method}');
-    });
-    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
-    final repository = _Repository();
-    final container = ProviderContainer(
-      overrides: [venueRepositoryProvider.overrideWithValue(repository)],
+  for (final permission in [
+    LocationPermission.denied,
+    LocationPermission.deniedForever,
+    LocationPermission.unableToDetermine,
+  ]) {
+    test(
+      'discovery does not request permission or read GPS for $permission',
+      () async {
+        const channel = MethodChannel('flutter.baseflow.com/geolocator');
+        final calls = <String>[];
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        messenger.setMockMethodCallHandler(channel, (call) async {
+          calls.add(call.method);
+          if (call.method == 'isLocationServiceEnabled') return true;
+          if (call.method == 'checkPermission') return permission.index;
+          throw StateError('Unexpected native call: ${call.method}');
+        });
+        addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+        final repository = _Repository();
+        final container = ProviderContainer(
+          overrides: [venueRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
+        await container.read(fetchNearbyVenuesProvider.future);
+        expect(calls, ['isLocationServiceEnabled', 'checkPermission']);
+        expect(repository.calls, [(null, null, 5.0)]);
+      },
     );
-    addTearDown(container.dispose);
-    await container.read(fetchNearbyVenuesProvider.future);
-    expect(calls, ['isLocationServiceEnabled', 'checkPermission']);
-    expect(repository.calls, [(null, null, 5.0)]);
-  });
+  }
 
   test(
     'discovery and city share one lookup, and refresh uses new coordinates',
