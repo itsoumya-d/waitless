@@ -10,6 +10,7 @@ import '../../../core/services/app_providers.dart';
 import '../../../core/services/venue_data_provider.dart';
 import '../../../core/services/user_stats_service.dart';
 import '../../../core/services/location_service.dart';
+import '../../../core/services/nearby_venues.dart';
 import '../../../core/widgets/shimmer_widgets.dart';
 import '../../../models/venue.dart';
 import '../widgets/time_saved_banner.dart';
@@ -32,13 +33,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final venuesAsync = ref.watch(fetchNearbyVenuesProvider);
     final currentCityAsync = ref.watch(currentCityProvider);
+    final location = ref.watch(currentLocationProvider).valueOrNull;
+    final hasLocation = hasValidCoordinates(location?.latitude, location?.longitude);
     
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
           HapticFeedback.mediumImpact();
           ref.invalidate(fetchNearbyVenuesProvider);
-          ref.invalidate(currentCityProvider);
+          ref.invalidate(currentLocationProvider);
           await Future.wait([
             ref.read(fetchNearbyVenuesProvider.future),
             ref.read(currentCityProvider.future),
@@ -272,10 +275,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '📍 Nearby',
-                    style: AppTypography.titleMedium.copyWith(
-                      color: AppColors.textPrimaryLight,
+                  Flexible(
+                    child: Text(
+                      hasLocation ? '📍 Nearby (5 km)' : '📍 Browse venues',
+                      style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.textPrimaryLight,
+                      ),
                     ),
                   ),
                   Row(
@@ -553,3 +558,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
+
