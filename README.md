@@ -53,6 +53,32 @@ We have successfully graduated from MVP to a **premium, production-ready** appli
    - Ensure you have a Firebase project with **Authentication** (Email/Anonymous) and **Firestore** enabled.
 
 
+## Nearby venue behavior
+
+- Home and the city label share a one-shot lookup using already-granted location
+  permission. Discovery does not request permission. A valid
+  location filters venue results to an inclusive **5 km** great-circle radius,
+  ordered nearest first. Refresh repeats that lookup.
+- Mock and Firestore repositories use the same distance selection. Distances
+  use a spherical Earth radius of 6,371 km, not road/travel distance. Equal
+  distances preserve source order. A zero radius includes colocated venues;
+  negative and non-finite radii return no results.
+- With missing or invalid user coordinates, discovery remains a catalog in
+  source order and Home says **Browse venues**, without inventing a location.
+  A location lookup that fails or takes longer than ten seconds also falls back.
+  Firestore records missing valid numeric coordinates are excluded from discovery.
+- Firestore still fetches the collection before client-side filtering. This is
+  not a server-side geospatial query or a scalability claim.
+- Deterministic nearby tests use synthetic coordinates and fake repositories;
+  they do not read device location, request permissions, or contact Firebase.
+
+```bash
+flutter test test/services/nearby_venues_test.dart test/services/nearby_repositories_test.dart test/services/nearby_providers_test.dart test/services/mock_nearby_repository_test.dart
+flutter analyze
+flutter test
+```
+
+
 ---
 
 ## 1. Executive Summary

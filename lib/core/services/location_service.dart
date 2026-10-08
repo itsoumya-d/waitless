@@ -22,7 +22,7 @@ class LocationService {
   }
   
   /// Get current position
-  Future<Position?> getCurrentPosition() async {
+  Future<Position?> getCurrentPosition({bool requestPermission = true}) async {
     try {
       // Check if location service is enabled
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -33,6 +33,7 @@ class LocationService {
       // Check permission
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
+        if (!requestPermission) return null;
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           return null;
@@ -61,6 +62,15 @@ class LocationService {
       final position = await getCurrentPosition();
       if (position == null) return null;
       
+      return getCityForPosition(position);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Resolve a city from an already obtained position, without another GPS read.
+  Future<String?> getCityForPosition(Position position) async {
+    try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -156,8 +166,27 @@ final currentPositionProvider = StreamProvider<Position?>((ref) async* {
   }
 });
 
-/// Provider for currents city name
+/// Shared one-shot location for venue discovery and the city label.
+/// Reads only with existing permission; discovery never opens a permission
+/// prompt. Explicit permission-request entry points are unchanged.
+final currentLocationProvider = FutureProvider<Position?>((ref) async {
+  try {
+    return await ref.watch(locationServiceProvider).getCurrentPosition(
+      requestPermission: false,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => null,
+    );
+  } catch (_) {
+    return null;
+  }
+});
+
+/// Provider for current city name
 final currentCityProvider = FutureProvider<String?>((ref) async {
   final locationService = ref.watch(locationServiceProvider);
-  return locationService.getCurrentCity();
+  final position = await ref.watch(currentLocationProvider.future);
+  if (position == null) return null;
+  return locationService.getCityForPosition(position);
 });
+

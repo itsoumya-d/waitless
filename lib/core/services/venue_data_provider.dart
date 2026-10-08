@@ -6,6 +6,7 @@ import '../../models/crowd_report.dart';
 import 'venue_repository.dart';
 import 'firestore_venue_repository.dart';
 import 'auth_service.dart';
+import 'location_service.dart';
 
 /// Configuration for which data source to use
 enum DataSourceMode {
@@ -136,8 +137,8 @@ class _FirestoreVenueAdapter implements IVenueRepository {
     double? longitude,
     double radiusKm = 5.0,
   }) => _repo.getNearbyVenues(
-    latitude: latitude ?? 0,
-    longitude: longitude ?? 0,
+    latitude: latitude,
+    longitude: longitude,
     radiusKm: radiusKm,
   );
   
@@ -216,7 +217,11 @@ class _FirestoreVenueAdapter implements IVenueRepository {
 /// Provider for fetching nearby venues (uses unified interface)
 final fetchNearbyVenuesProvider = FutureProvider<List<Venue>>((ref) async {
   final repo = ref.watch(venueRepositoryProvider);
-  return repo.getNearbyVenues();
+  final location = await ref.watch(currentLocationProvider.future);
+  return repo.getNearbyVenues(
+    latitude: location?.latitude,
+    longitude: location?.longitude,
+  );
 });
 
 /// Provider for fetching venue by ID
@@ -266,4 +271,5 @@ final crowdReportsStreamProvider = StreamProvider.family<List<CrowdReport>, Stri
   // For mock mode, return empty stream
   return Stream.value(<CrowdReport>[]);
 });
+
 

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/venue.dart';
 import '../../models/crowd_report.dart';
+import 'nearby_venues.dart';
 
 /// Firestore repository for venues
 /// 
@@ -33,27 +34,41 @@ class FirestoreVenueRepository {
     }
   }
   
-  /// Get venues near a location
+  /// Get nearby venues, or browse the catalog when location is unknown.
   Future<List<Venue>> getNearbyVenues({
-    required double latitude,
-    required double longitude,
+    double? latitude,
+    double? longitude,
     double radiusKm = 5.0,
   }) async {
+    if (!radiusKm.isFinite || radiusKm < 0) return [];
     try {
-      // Firestore doesn't support geo queries natively
-      // For now, fetch all and filter client-side
-      // TODO: Implement geohashing for better performance
+      // Firestore has no native radius query. Filter client-side for now;
+      // geohashing is still needed to avoid fetching the full collection.
       final snapshot = await _venuesCollection.get();
-      return snapshot.docs.map((doc) {
+      final venues = <Venue>[];
+      for (final doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        return _venueFromFirestore(doc.id, data);
-      }).toList();
+        final lat = data['latitude'];
+        final lng = data['longitude'];
+        // Do not turn missing coordinates into a real venue at (0, 0).
+        if (lat is! num || lng is! num ||
+            !hasValidCoordinates(lat.toDouble(), lng.toDouble())) {
+          continue;
+        }
+        venues.add(_venueFromFirestore(doc.id, data));
+      }
+      return selectNearbyVenues(
+        venues,
+        latitude: latitude,
+        longitude: longitude,
+        radiusKm: radiusKm,
+      );
     } catch (e) {
       debugPrint('❌ Error fetching nearby venues: $e');
       return [];
     }
   }
-  
+
   /// Get venue by ID
   Future<Venue?> getVenueById(String id) async {
     try {
@@ -340,4 +355,5 @@ class FirestoreVenueRepository {
 final firestoreVenueRepositoryProvider = Provider<FirestoreVenueRepository>((ref) {
   return FirestoreVenueRepository(FirebaseFirestore.instance);
 });
+
 

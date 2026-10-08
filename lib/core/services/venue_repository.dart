@@ -1,4 +1,5 @@
 import '../../models/venue.dart';
+import 'nearby_venues.dart';
 
 /// Repository for venue data operations
 class VenueRepository {
@@ -96,7 +97,7 @@ class VenueRepository {
     ),
   ];
   
-  /// Get all nearby venues (mock implementation)
+  /// Get nearby demo venues, or the demo catalog when location is unknown.
   Future<List<Venue>> getNearbyVenues({
     double? latitude,
     double? longitude,
@@ -105,8 +106,12 @@ class VenueRepository {
     // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 500));
     
-    // In a real implementation, filter by distance using lat/lng
-    return _mockVenues;
+    return selectNearbyVenues(
+      _mockVenues,
+      latitude: latitude,
+      longitude: longitude,
+      radiusKm: radiusKm,
+    );
   }
   
   /// Get venue by ID
@@ -227,3 +232,4 @@ class VenueRepository {
     }).toList();
   }
 }
+
