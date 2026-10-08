@@ -32,8 +32,12 @@ class LocationService {
       
       // Check permission
       var permission = await Geolocator.checkPermission();
+      if (!requestPermission &&
+          permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        return null;
+      }
       if (permission == LocationPermission.denied) {
-        if (!requestPermission) return null;
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           return null;
