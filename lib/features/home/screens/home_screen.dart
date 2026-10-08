@@ -275,10 +275,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    hasLocation ? '📍 Nearby (5 km)' : '📍 Browse venues',
-                    style: AppTypography.titleMedium.copyWith(
-                      color: AppColors.textPrimaryLight,
+                  Flexible(
+                    child: Text(
+                      hasLocation ? '📍 Nearby (5 km)' : '📍 Browse venues',
+                      style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.textPrimaryLight,
+                      ),
                     ),
                   ),
                   Row(
